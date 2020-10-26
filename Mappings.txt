@@ -1,0 +1,8 @@
+Purchse Price/DALECST: {{multiply SHEETCST {{multiply {{subtract 1 {{divide [DALE DISCOUNT] 100}}}} {{subtract 1 {{divide [DALE DISCOUNT 2] 100}}}}}}}}
+
+
+LandCST: {{#if [LandCST Percentage]}} expr {{else}} expr {{/if}}{{}}
+
+var r = nlapiSearchRecord('customrecord25', null, ["name", "is", "NUAGE SYNC"], [new nlobjSearchColumn('custrecordcust_record_prefix'), new nlobjSearchColumn('custrecordcust_vndr_code_charcter_rmvl')]);
+
+.replace(/[^a-z0-9]/gmi, " ").replace(/\s+/g, " ")
