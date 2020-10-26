@@ -22,11 +22,11 @@
 */
 function preMap (options) {
     setValues(options);
-  return options.data.map((d) => {
-    return {
-      data: d
-    }
-  })
+    return options.data.map((d) => {
+        return {
+        data: d
+        }
+    })
 }
 
 function setValues(options) {

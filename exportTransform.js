@@ -8,6 +8,7 @@ function transform(options) {
         return record;
     }
     setPurchaseDescription(record);
+    setItemPartNumber(record);
     setLandCSTPercentage(record);
     setLBVMarkupPercentage(record);
     setUniLateralPrice(record);
@@ -40,6 +41,16 @@ function setPurchaseDescription(record) {
     record["Purchase Description"] = purchaseDescription;
 }
 
+/**
+    ITEM PART NUMBER (custitemcust_item_part_nmbr) IF the value in the CSV for Item Part Number is EMPTY.
+ */
+
+function setItemPartNumber(record) {
+    record["ItemPartNumber"] = 
+        !record["Item Part Number"] 
+            ? record["Item Part Name"] 
+            : record["Item Part Number"];
+}
 /**
     LANDCST PERCENTAGE (custitemcust_item_landcst_multiplier)
 
