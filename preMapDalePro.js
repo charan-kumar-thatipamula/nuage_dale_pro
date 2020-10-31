@@ -37,8 +37,66 @@ function setValues(options) {
         if (!record) {
             continue;
         }
-        setVendorNameOrExternalId(record);
+        var r = getBrand(record);
+        if (!r || r.length == 0) {
+            continue;
+        }
+        setVendorNameOrExternalId(record, r);
+        setDescriptionFields(record, r);
     }
+}
+
+/**
+    The description fields will concatenate two or three CSV fields and the results will be modified prior to updating Netsuite:
+
+    1.  The string will be capitalized
+
+    2.  With the exception of the DISPLAY NAME/CODE field, if the length of the concatenated string is greater than 99 characters, the value is truncated to 96 characters, and is concatenated with "..."
+
+    3.  When setting the DISPLAY NAME/CODE field, if the length of the concatenated string is greater than 60 characters, the value is truncated to 57 characters, and is concatenated with "..."
+
+
+    IF BRAND + PURCHASE DESCRIPTION (custrecordcust_rec_brnd_pdes) = FALSE, concatenate these elements:
+
+    (Value for Brand in the CSV) + (space) + (Value for Item Part Name in the CSV) + (space) + (Value for Purchase Description in the CSV)
+
+
+    IF BRAND + PURCHASE DESCRIPTION (custrecordcust_rec_brnd_pdes) = TRUE, concatenate these elements:
+
+    (Value for Brand in the CSV) + (space) + (Value for Purchase Description in the CSV)
+
+ * @param {*} record : Export CSV record received from data loader
+ * @param {*} brandRecord : Brand record searched based on 'Brand' value from export record
+ */
+function setDescriptionFields(record, brandRecord) {
+    var brandPlusPurchaseDescription = brandRecord[0].getValue('custrecordcust_rec_brnd_pdes');
+    var description = "";
+    if (brandPlusPurchaseDescription == "F") {
+        description = record["Brand"] + " " + record["Item Part Name"] + " " + record["Purchase Description"];
+    }
+
+    if (brandPlusPurchaseDescription == "T") {
+        description = record["Brand"] + " " + record["Purchase Description"];
+    }
+
+    record["DisplayNameCodeIngested"] = applyTruncationRule(description, 60, 57);
+    var truncatedValue = applyTruncationRule(description, 99, 96);
+    record["SalesDescriptionIngested"] = truncatedValue;
+    record["PageTitleIngested"] = truncatedValue;
+    record["WebStoreDisplayNameIngested"] = truncatedValue;
+    record["WebStoreDescriptionIngested"] = truncatedValue;
+}
+
+function applyTruncationRule(value, maxLength, lenghtToLimit) {
+    if (!value) {
+        return value;
+    }
+    value = value.toUpperCase();
+    if (value.length > maxLength) {
+        value = value.substr(0, lenghtToLimit).concat("...");
+    }
+
+    return value;
 }
 
 /**
@@ -66,18 +124,7 @@ function setValues(options) {
 
     Vendor Name/Code Value is set to = NC4MX/MX-15CQ
  */
-function setVendorNameOrExternalId(record) {
-    if (!record) {
-        return;
-    }
-
-    var r = nlapiSearchRecord('customrecord25', null, 
-    ["name", "is", record.Brand], 
-    [new nlobjSearchColumn('custrecordcust_record_prefix'), new nlobjSearchColumn('custrecordcust_vndr_code_charcter_rmvl')]);
-
-    if (r == null || r.length == 0) {
-        return;
-    }
+function setVendorNameOrExternalId(record, r) {
     var vendorCodeCharRemove = r[0].getValue('custrecordcust_vndr_code_charcter_rmvl');
     var prefix = r[0].getValue('custrecordcust_record_prefix');
     var itemName = record["Item Part Name"];
@@ -87,4 +134,15 @@ function setVendorNameOrExternalId(record) {
     record["VendorName"] = itemName;
     record["ExternalId"] = prefix + "-" + itemName;
     record["Prefix"] = prefix;    
+}
+
+function getBrand(record) {
+    if (!record) {
+        return;
+    }
+
+    var r = nlapiSearchRecord('customrecord25', null, 
+    ["name", "is", "NUAGE SYNC"], 
+    [new nlobjSearchColumn('custrecordcust_record_prefix'), new nlobjSearchColumn('custrecordcust_vndr_code_charcter_rmvl'), new nlobjSearchColumn('custrecordcust_rec_brnd_pdes')]);
+    return r;
 }

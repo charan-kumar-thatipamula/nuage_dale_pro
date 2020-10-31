@@ -7,7 +7,7 @@ function transform(options) {
     if (!record) {
         return record;
     }
-    setPurchaseDescription(record);
+    updateFieldsWithLargeValues(record);
     setItemPartNumber(record);
     setLandCSTPercentage(record);
     setLBVMarkupPercentage(record);
@@ -17,9 +17,19 @@ function transform(options) {
     setPurchasePriceAndDaleCSTFields(record);
     setLandCSTAndLandCSTBaseValueFields(record);
     setMapPrice(record);
+    setPriceLevels(record);
     applyGeneralPricingRules(record);
+    applyRoundingRules(record);
     setDummyExternalId(record);
     return options.record;
+}
+
+function updateFieldsWithLargeValues(record) {
+    var fields = ["Purchase Description"];
+
+    for (var i=0;i<fields.length;i++) {
+        record[fields[i]] = applyTruncationRule(record[fields[i]]);
+    }
 }
 
 /**
@@ -30,15 +40,16 @@ function transform(options) {
     2.  If the length of the value in the CSV is greater than 99 characters, the value is truncated to 96 characters, and is concatenated with "..."
  */
 
-function setPurchaseDescription(record) {
-    var purchaseDescription = record["Purchase Description"];
-    if (purchaseDescription) {
-        purchaseDescription = purchaseDescription.toUpperCase();
-        if (purchaseDescription.length > 99) {
-            purchaseDescription = purchaseDescription.substr(0, 96).concat("...");
-        }
+function applyTruncationRule(value) {
+    if (!value) {
+        return value;
     }
-    record["Purchase Description"] = purchaseDescription;
+    value = value.toUpperCase();
+    if (value.length > 99) {
+        value = value.substr(0, 96).concat("...");
+    }
+
+    return value;
 }
 
 /**
@@ -152,8 +163,9 @@ function setPurchasePriceAndDaleCSTFields(record) {
     var daleDiscount2 = getFloatValue(record["DALE DISCOUNT 2"]);
 
     var calculatedValue = sheetCST * ((1-(daleDiscount/100)) * (1-(daleDiscount2/100)));
-    record["PurchasePriceIngested"] = calculatedValue;
-    record["DaleCSTIngested"] = calculatedValue;
+
+    record["PurchasePriceIngested"] = calculatedValue;//roundTo2Decimal(calculatedValue);
+    record["DaleCSTIngested"] = calculatedValue;//roundTo2Decimal(calculatedValue);
 }
 
 /**
@@ -201,18 +213,18 @@ function setLandCSTAndLandCSTBaseValueFields(record) {
 
         // What if sheetCST == sheetCSTLimit??
         if (sheetCST < sheetCSTLimit) {
-            record["LandCST"] = purchasePrice * 1.02;
-            record["LandCSTBaseValue"] = purchasePrice * 1.02;
+            record["LandCSTIngested"] = purchasePrice * 1.02;
+            record["LandCSTBaseValueIngested"] = purchasePrice * 1.02;
         }
 
         if (sheetCST > sheetCSTLimit) {
-            record["LandCST"] = purchasePrice * 1.01;
-            record["LandCSTBaseValue"] = purchasePrice * 1.01;
+            record["LandCSTIngested"] = purchasePrice * 1.01;
+            record["LandCSTBaseValueIngested"] = purchasePrice * 1.01;
         }
     } else {
         landCSTPercentage = getFloatValue(record["LandCST Percentage"]);
-        record["LandCST"] = purchasePrice * ((landCSTPercentage/100) + 1);
-        record["LandCSTBaseValue"] = purchasePrice * ((landCSTPercentage/100) + 1);
+        record["LandCSTIngested"] = purchasePrice * ((landCSTPercentage/100) + 1);
+        record["LandCSTBaseValueIngested"] = purchasePrice * ((landCSTPercentage/100) + 1);
     }
 }
 
@@ -317,16 +329,6 @@ function setMapPrice(record) {
     record["BuyItNowPrice"] = buyItNowPrice;
 }
 
-function getPriceLevelSellA(record) {
-    var listPrice = getFloatValue(record["LIST PRICE"]);
-    var lbvMarkupPercentage = getFloatValue(record["LBV Markup Percentage"]);
-    var priceLevelAPercentage = (!record["Price Level A Percentage"]) ? 0.72 : getFloatValue(record["Price Level A Percentage"]);
-    var landCST = getFloatValue(record["LandCST"]);
-    
-    var numerator = (1+(lbvMarkupPercentage/100));
-    return landCST * numerator/priceLevelAPercentage;
-}
-
 /**
     With the exception of LIST PRICE, no Price Level will be greater than MAP Price. 
 
@@ -339,8 +341,8 @@ function applyGeneralPricingRules(record) {
     var mapPrice = getFloatValue(record["MAP Price"]);
     record["PurchasePriceIngested"] = getPriceAccordingToPricingRule(record["PurchasePriceIngested"], mapPrice);
     record["DaleCSTIngested"] = getPriceAccordingToPricingRule(record["DaleCSTIngested"], mapPrice);
-    record["LandCST"] = getPriceAccordingToPricingRule(record["LandCST"], mapPrice);
-    record["LandCSTBaseValue"] = getPriceAccordingToPricingRule(record["LandCSTBaseValue"], mapPrice);
+    record["LandCSTIngested"] = getPriceAccordingToPricingRule(record["LandCSTIngested"], mapPrice);
+    record["LandCSTBaseValueIngested"] = getPriceAccordingToPricingRule(record["LandCSTBaseValueIngested"], mapPrice);
 }
 
 function getPriceAccordingToPricingRule(priceToCompare, mapPrice) {
@@ -353,5 +355,178 @@ function getFloatValue(inputValue) {
 }
 
 function setDummyExternalId(record) {
-    record["ExternalId"] = "";    
+    record["ExternalId"] = ""; 
+}
+
+function setPriceLevels(record) {
+
+    var mapPrice = record["MAP Price"];
+    var uniLateralPrice = record["Unilateral Price"];
+
+    record["BasePriceIngested"] = mapPrice;
+    record["OnlinePriceIngested"] = mapPrice;
+
+    // If the CSV value for Unilateral Price = TRUE, the following price levels are set to the CSV value for MAP Price, regardless of the value found in any of the Price Level Percentage columns:
+    if (uniLateralPrice == "TRUE") {
+        record["BasePriceIngested"] = mapPrice;
+        record["OnlinePriceIngested"] = mapPrice;
+        record["SellAIngested"] = mapPrice;
+        record["SellBIngested"] = mapPrice;
+        record["SellCIngested"] = mapPrice;
+        record["SellDIngested"] = mapPrice;
+        record["SellEIngested"] = mapPrice;
+        record["NETWORKIngested"] = mapPrice;
+        record["NETWORK2Ingested"] = mapPrice;
+    }
+
+    if (!uniLateralPrice || uniLateralPrice == "FALSE") {
+        record["SellAIngested"] = getPriceLevelSellA(record);
+        record["SellBIngested"] = getPriceLevelSellB(record);
+        record["SellCIngested"] = getPriceLevelSellC(record);
+        record["SellDIngested"] = getPriceLevelSellD(record);
+        record["SellEIngested"] = getPriceLevelSellE(record);
+        record["NETWORK2Ingested"] = getPriceLevelSellNW2(record);
+        record["NETWORKIngested"] = getPriceLevelSellNW(record);
+    }
+    
+    record["PriceLevelAPercentageIngested"] = getValueForPriceLevel(record, "Price Level A Percentage");
+    record["PriceLevelBPercentageIngested"] = getValueForPriceLevel(record, "Price Level B Percentage");
+    record["PriceLevelCPercentageIngested"] = getValueForPriceLevel(record, "Price Level C Percentage");
+    record["PriceLevelDPercentageIngested"] = getValueForPriceLevel(record, "Price Level D Percentage");
+    record["PriceLevelEPercentageIngested"] = getValueForPriceLevel(record, "Price Level E Percentage");
+    record["PriceLevelNetwork2PercentageIngested"] = getValueForPriceLevel(record, "Price Level Network 2 Percentage");
+    record["PriceLevelNetworkPercentageIngested"] = getValueForPriceLevel(record, "Price Level Network Percentage");}
+
+function getPriceLevelSellA(record) {
+    return getPriceLevelSell(record, "Price Level A Percentage");
+}
+
+function getPriceLevelSellB(record) {
+    return getPriceLevelSell(record, "Price Level B Percentage");
+}
+
+function getPriceLevelSellC(record) {
+    return getPriceLevelSell(record, "Price Level C Percentage");
+}
+
+function getPriceLevelSellD(record) {
+    return getPriceLevelSell(record, "Price Level D Percentage");
+}
+
+function getPriceLevelSellE(record) {
+    return getPriceLevelSell(record, "Price Level E Percentage");
+}
+
+function getPriceLevelSellNW2(record) {
+    return getPriceLevelSell(record, "Price Level Network 2 Percentage");
+}
+
+function getPriceLevelSellNW(record) {
+    return getPriceLevelSell(record, "Price Level Network Percentage");
+}
+
+function getPriceLevelSell(record, priceLevelKey) {
+    var listPrice = getFloatValue(record["LIST PRICE"]);
+    var lbvMarkupPercentage = getFloatValue(record["LBV Markup Percentage"]);
+    var priceLevelPercentage = getValueForPriceLevel(record, priceLevelKey);
+    var landCST = getFloatValue(record["LandCSTIngested"]);
+    
+    var numerator = (1+(lbvMarkupPercentage/100));
+    var priceValue = landCST * numerator/priceLevelPercentage;
+    return appyRoundingRuleForPriceLevelSell(priceValue);
+}
+
+function getValueForPriceLevel(record, priceLevelKey) {
+    if (priceLevelKey == "Price Level A Percentage") {
+        return getValueForPriceLevelWithDefault(record, priceLevelKey, 0.72); 
+    }
+
+    if (priceLevelKey == "Price Level B Percentage") {
+        return getValueForPriceLevelWithDefault(record, priceLevelKey, 0.8); 
+    }
+
+    if (priceLevelKey == "Price Level C Percentage") {
+        return getValueForPriceLevelWithDefault(record, priceLevelKey, 0.82); 
+    }
+
+    if (priceLevelKey == "Price Level D Percentage") {
+        return getValueForPriceLevelWithDefault(record, priceLevelKey, 0.84); 
+    }
+
+    if (priceLevelKey == "Price Level E Percentage") {
+        return getValueForPriceLevelWithDefault(record, priceLevelKey, 0.87); 
+    }
+
+    if (priceLevelKey == "Price Level Network 2 Percentage") {
+        return getValueForPriceLevelWithDefault(record, priceLevelKey, 0.88); 
+    }
+
+    if (priceLevelKey == "Price Level Network Percentage") {
+        return getValueForPriceLevelWithDefault(record, priceLevelKey, 0.9); 
+    }
+}
+
+function getValueForPriceLevelWithDefault(record, priceLevelKey, defaultValue) {
+    return !record[priceLevelKey] ? defaultValue : getFloatValue(record[priceLevelKey]);
+}
+
+function appyRoundingRuleForPriceLevelSell(priceValue) {
+    if (!priceValue) {
+        return priceValue;
+    }
+
+    // For prices calculated below $10, round to (2) decimal places.
+    if (priceValue < 10) {
+        return roundTo2Decimal(priceValue);
+    }
+
+    // For prices calculated between $10.01 and $49.99, round to the nearest dollar or .50
+    if (priceValue >= 10.01 || priceValue <= 49.99) {
+        return roundToNearestDot5(priceValue);
+    }
+    // For prices calculated above $49.99, round to the nearest dollar.
+    if (priceValue > 49.99) {
+        return roundToNearestInteger(priceValue);
+    }
+}
+
+function roundTo2Decimal(value) {
+    if (!value) {
+        return value;
+    }
+    return value.toFixed(2);
+}
+
+function roundToNearestDot5(value) {
+    if (!value) {
+        return value;
+    }
+    return Math.round(value*2)/2
+}
+
+function roundToNearestInteger(value) {
+    if (!value) {
+        return value;
+    }
+    return Math.round(value);
+}
+/**
+No rounding is to be performed on these price levels:
+
+    LIST PRICE
+    SHEETCST
+    MAP Price (provided that a value is provided in the CSV for MAP Price)    
+
+The values for the following fields are to be rounded to (2) decimal places:
+
+    PURCHASE PRICE
+    DALECST
+    LANDCST
+    LANDCST BASE VALUE
+*/
+function applyRoundingRules(record) {
+    record["PurchasePriceIngested"] = roundTo2Decimal(record["PurchasePriceIngested"]);
+    record["DaleCSTIngested"] = roundTo2Decimal(record["DaleCSTIngested"]);
+    record["LandCSTIngested"] = roundTo2Decimal(record["LandCSTIngested"]);
+    record["LandCSTBaseValueIngested"] = roundTo2Decimal(record["LandCSTBaseValueIngested"]);
 }
