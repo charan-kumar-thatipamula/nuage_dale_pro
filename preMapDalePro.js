@@ -22,11 +22,13 @@
 */
 function preMap (options) {
     setValues(options);
-    return options.data.map((d) => {
-        return {
-        data: d
-        }
-    })
+    var preMapReturnObj = [];
+    for(var i=0; i<options.data.length; i++){
+        preMapReturnObj.push({
+            data : options.data[i]
+        });
+    }
+    return preMapReturnObj;
 }
 
 function setValues(options) {
@@ -66,19 +68,23 @@ function setValues(options) {
  */
 function setVendorNameOrExternalId(record) {
     if (!record) {
-        return "";
+        return;
     }
 
     var r = nlapiSearchRecord('customrecord25', null, 
     ["name", "is", record.Brand], 
     [new nlobjSearchColumn('custrecordcust_record_prefix'), new nlobjSearchColumn('custrecordcust_vndr_code_charcter_rmvl')]);
 
+    if (r == null || r.length == 0) {
+        return;
+    }
     var vendorCodeCharRemove = r[0].getValue('custrecordcust_vndr_code_charcter_rmvl');
     var prefix = r[0].getValue('custrecordcust_record_prefix');
     var itemName = record["Item Part Name"];
     if (vendorCodeCharRemove == "T") {
-        itemName = item.replace(/[^A-Za-z0-9]/gmi, "").replace(/\s+/g, "");
+        itemName = itemName.replace(/[^A-Za-z0-9]/gmi, "").replace(/\s+/g, "");
     }
     record["VendorName"] = itemName;
     record["ExternalId"] = prefix + "-" + itemName;
+    record["Prefix"] = prefix;    
 }

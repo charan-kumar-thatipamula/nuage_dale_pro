@@ -18,7 +18,7 @@ function transform(options) {
     setLandCSTAndLandCSTBaseValueFields(record);
     setMapPrice(record);
     applyGeneralPricingRules(record);
-
+    setDummyExternalId(record);
     return options.record;
 }
 
@@ -350,4 +350,8 @@ function getPriceAccordingToPricingRule(priceToCompare, mapPrice) {
 function getFloatValue(inputValue) {
     // Handle the case where inputValue is "null" or some other string
     return !inputValue ? 0 : ((typeof inputValue == "string") ? parseFloat(inputValue) : inputValue);
+}
+
+function setDummyExternalId(record) {
+    record["ExternalId"] = "";    
 }
