@@ -335,18 +335,35 @@ function setMapPrice(record) {
     If the calculation for a Price Level would result in a the value being greater than the value for MAP Price in the CSV, the value for those Price Levels shall be set to MAP Price. 
  */
 function applyGeneralPricingRules(record) {
-    if (record["MAP Price"] == "null") {
+    var priceToCompare = record["MAP Price"];
+    if (priceToCompare == "null" || !priceToCompare) {
+        priceToCompare = record["LIST PRICE"];
+    }
+
+    if (priceToCompare == "null" || !priceToCompare) {
         return;
     }
-    var mapPrice = getFloatValue(record["MAP Price"]);
-    record["PurchasePriceIngested"] = getPriceAccordingToPricingRule(record["PurchasePriceIngested"], mapPrice);
-    record["DaleCSTIngested"] = getPriceAccordingToPricingRule(record["DaleCSTIngested"], mapPrice);
-    record["LandCSTIngested"] = getPriceAccordingToPricingRule(record["LandCSTIngested"], mapPrice);
-    record["LandCSTBaseValueIngested"] = getPriceAccordingToPricingRule(record["LandCSTBaseValueIngested"], mapPrice);
+
+    priceToCompare = getFloatValue(priceToCompare);
+
+    var applyRulesFor = new Array();
+    applyRulesFor.push("BasePriceIngested");
+    applyRulesFor.push("OnlinePriceIngested");
+    applyRulesFor.push("SellAIngested");
+    applyRulesFor.push("SellBIngested");
+    applyRulesFor.push("SellCIngested");
+    applyRulesFor.push("SellDIngested");
+    applyRulesFor.push("SellEIngested");
+    applyRulesFor.push("NETWORKIngested");
+    applyRulesFor.push("NETWORK2Ingested");
+
+    for (var i=0;i<applyRulesFor.length;i++) {
+        record[applyRulesFor[i]] = getPriceAccordingToPricingRule(record[applyRulesFor[i]], priceToCompare);
+    }
 }
 
-function getPriceAccordingToPricingRule(priceToCompare, mapPrice) {
-    return (priceToCompare > mapPrice) ? mapPrice : priceToCompare;
+function getPriceAccordingToPricingRule(priceLevel, priceToCompare) {
+    return (priceLevel > priceToCompare) ? priceToCompare : priceLevel;
 }
 
 function getFloatValue(inputValue) {
