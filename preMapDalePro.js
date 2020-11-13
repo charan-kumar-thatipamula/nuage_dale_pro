@@ -131,9 +131,10 @@ function setVendorNameOrExternalId(record, r) {
     if (vendorCodeCharRemove == "T") {
         itemName = itemName.replace(/[^A-Za-z0-9]/gmi, "").replace(/\s+/g, "");
     }
-    record["VendorName"] = itemName;
-    record["ExternalId"] = prefix + "-" + itemName;
-    record["Prefix"] = prefix;    
+    var externalId = prefix + "-" + itemName; 
+    record["VendorName"] = itemName.toUpperCase();
+    record["ExternalId"] = externalId.toUpperCase();
+    record["Prefix"] = prefix.toUpperCase();
 }
 
 function getBrand(record) {
@@ -142,7 +143,7 @@ function getBrand(record) {
     }
 
     var r = nlapiSearchRecord('customrecord25', null, 
-    ["name", "is", "NUAGE SYNC"], 
+    ["name", "is", record["Brand"]], 
     [new nlobjSearchColumn('custrecordcust_record_prefix'), new nlobjSearchColumn('custrecordcust_vndr_code_charcter_rmvl'), new nlobjSearchColumn('custrecordcust_rec_brnd_pdes')]);
     return r;
 }
