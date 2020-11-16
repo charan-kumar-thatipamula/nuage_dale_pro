@@ -24,6 +24,19 @@ function transform(options) {
     return options.record;
 }
 
+/*
+    For New Records:
+
+    if Purchase Description in the CSV is EMPTY: Upload should FAIL
+    if Purchase Description in the CSV is populated:  execute the outlined logic for setting description fields
+
+
+    For Existing Records:
+
+    if Purchase Description in the CSV is EMPTY:  No Description Fields are Updated - Upload Can Proceed
+
+    if Purchase Description in the CSV is populated: PURCHASE DESCRIPTION (purchasedescription) is updated ONLY.  No other description fields are updated.
+*/
 function updateFieldsWithLargeValues(record) {
     var fields = ["Purchase Description"];
 

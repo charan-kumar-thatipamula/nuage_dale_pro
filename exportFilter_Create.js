@@ -33,6 +33,7 @@ function exportFilter(options) {
               r["Price List Date"] &&
               r["LIST PRICE"] &&
               r.SHEETCST &&
+              r["Purchase Description"] && 
               (getFloatValue(r.SHEETCST) <= getFloatValue(r["LIST PRICE"]))&&
               (!r["MAP Price"] || 
                 (getFloatValue(r.SHEETCST) <= getFloatValue(r["MAP Price"]))&&
@@ -45,43 +46,47 @@ function exportFilter(options) {
     var brand = "";
     var itemPartName = "";
     if (!r.Brand) {
-      errorMessage = "['Brand' should not be empty] "
+      errorMessage = "['Brand' should not be empty] \n"
     } else {
       brand = r.Brand;
     }
 
     if (!r["Item Part Name"]) {
-      errorMessage += "['Item Part Name' should not be emtpty] ";
+      errorMessage += "['Item Part Name' should not be emtpty] \n";
     } else {
       itemPartName = r["Item Part Name"];
     }
 
     if (!r["Price List Date"]) {
-      errorMessage += "['Item Part Name' should not be emtpty] ";      
+      errorMessage += "['Item Part Name' should not be emtpty] \n";      
     }
 
     if (!r["LIST PRICE"]) {
-      errorMessage += "['LIST PRICE' should not be emtpty] ";      
+      errorMessage += "['LIST PRICE' should not be emtpty] \n";      
+    }
+
+    if (!r["Purchase Description"]) {
+        errorMessage += "['Purchase Description' should not be empty for Item Creation] \n";      
     }
 
     if (!r.SHEETCST) {
-      errorMessage += "['SHEETCST' should not be emtpty] ";      
+      errorMessage += "['SHEETCST' should not be emtpty] \n";      
     }
 
     if (r["MAP Price"] && !(getFloatValue(r.SHEETCST) <= getFloatValue(r["MAP Price"]))) {
-      errorMessage += "['SHEETCST' (" + r.SHEETCST + ") should be less than or equal to 'Map Price' (" + r["MAP Price"] + ")] ";      
+      errorMessage += "['SHEETCST' (" + r.SHEETCST + ") should be less than or equal to 'Map Price' (" + r["MAP Price"] + ")] \n";      
     }
 
     if (r["MAP Price"] && !(getFloatValue(r["MAP Price"]) <= getFloatValue(r["LIST PRICE"]))) {
-      errorMessage += "['Map Price' (" + r["MAP Price"] + ") should be less than or equal to 'LIST PRICE' (" + r["LIST PRICE"] + ")] ";      
+      errorMessage += "['Map Price' (" + r["MAP Price"] + ") should be less than or equal to 'LIST PRICE' (" + r["LIST PRICE"] + ")] \n";      
     }
 
     if (!(getFloatValue(r.SHEETCST) <= getFloatValue(r["LIST PRICE"]))) {
-      errorMessage += "['SHEETCST' (" + r["SHEETCST"] + ") should be less than or equal to 'LIST PRICE' (" + r["LIST PRICE"] + ")] ";      
+      errorMessage += "['SHEETCST' (" + r["SHEETCST"] + ") should be less than or equal to 'LIST PRICE' (" + r["LIST PRICE"] + ")] \n";      
     }
 
     if (!(getFloatValue(r["LIST PRICE"]) <= getFloatValue((r.SHEETCST * 12)))) {
-      errorMessage += "['LIST PRICE' (" + r["LIST PRICE"] + ") should be less than or equal to SHEETCST * 12 (" + (r["SHEETCST"] * 12 )+ ")] ";      
+      errorMessage += "['LIST PRICE' (" + r["LIST PRICE"] + ") should be less than or equal to SHEETCST * 12 (" + (r["SHEETCST"] * 12 )+ ")] \n";      
     }
     var msgPrefix = "";
     if (r.Brand) {

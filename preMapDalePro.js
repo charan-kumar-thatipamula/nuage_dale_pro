@@ -65,6 +65,10 @@ function setValues(options) {
 
     (Value for Brand in the CSV) + (space) + (Value for Purchase Description in the CSV)
 
+    Description Issue - the requirements doc outlines logic for creating descriptions for ADDITIONS.   
+    This logic does not apply to existing records.  
+    For adds and updates, the value in the CSV for Purchase Description should be capitalized and set in the Purchase Description field
+  
  * @param {*} record : Export CSV record received from data loader
  * @param {*} brandRecord : Brand record searched based on 'Brand' value from export record
  */
