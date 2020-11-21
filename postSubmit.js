@@ -46,13 +46,38 @@ function postSubmit (options) {
         record.setLineItemMatrixValue('price', 'price', 10, 1, record.getFieldValue("custitem_selle_store"));
         record.setLineItemMatrixValue('price', 'price', 11, 1, record.getFieldValue("custitem_onlineprice_store"));
 
-        var preferredStockLevel = record.getFieldValue('custitem_preferred_stock_level');
-        var reorderPoint = record.getFieldValue('custitem_reorder_point');
+        var preferredStockLevel = record.getFieldValue('custitem_preferred_stock_level_store');
+        var reorderPoint = record.getFieldValue('custitem_reorder_point_store');
 
-        record.setLineItemValue('locations', 'preferredstocklevel', 3, preferredStockLevel);
-        record.setLineItemValue('locations', 'reorderpoint', 3, preferredStockLevel);
+        if (record.getFieldValue('custitem_is_item_create') == "T") {
+            preferredStockLevel = getDefaultValue(preferredStockLevel);
+            reorderPoint = getDefaultValue(reorderPoint);
+            record.setLineItemValue('locations', 'preferredstocklevel', 3, preferredStockLevel);
+            record.setLineItemValue('locations', 'reorderpoint', 3, reorderPoint);
+        }
+
+        if (preferredStockLevel || (typeof preferredStockLevel == "string" && preferredStockLevel.trim().length > 0)) {
+            record.setLineItemValue('locations', 'preferredstocklevel', 3, preferredStockLevel);
+        }
+
+        if (reorderPoint || (typeof reorderPoint == "string" && reorderPoint.trim().length > 0)) {
+            record.setLineItemValue('locations', 'reorderpoint', 3, reorderPoint);
+        }
+
+        // reset values to support manual updates to fields inside location sublist
+        record.setFieldValue('custitem_preferred_stock_level_store', "");
+        record.setFieldValue('custitem_reorder_point_store', "");
+
         id = nlapiSubmitRecord(record);
         nlapiLogExecution('DEBUG', 'record saved in post submit', id);
     }
     return options.responseData
+}
+
+function getDefaultValue(value) {
+    if (!value || (typeof value == "string" && value.trim().length == 0)) {
+        return 0;
+    }
+
+    return value;
 }

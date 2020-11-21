@@ -34,6 +34,7 @@ function exportFilter(options) {
               r["LIST PRICE"] &&
               r.SHEETCST &&
               r["Purchase Description"] && 
+              r["Preferred Vendor"] && 
               (getFloatValue(r.SHEETCST) <= getFloatValue(r["LIST PRICE"]))&&
               (!r["MAP Price"] || 
                 (getFloatValue(r.SHEETCST) <= getFloatValue(r["MAP Price"]))&&
@@ -67,6 +68,10 @@ function exportFilter(options) {
 
     if (!r["Purchase Description"]) {
         errorMessage += "['Purchase Description' should not be empty for Item Creation] \n";      
+    }
+
+    if (!r["Preferred Vendor"]) {
+        errorMessage += "['Preferred Vendor' should not be empty for Item Creation] \n";      
     }
 
     if (!r.SHEETCST) {

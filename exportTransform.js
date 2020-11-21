@@ -118,7 +118,7 @@ function setLBVMarkupPercentage(record) {
 function setUniLateralPrice(record) {
     var uniLateralPrice = record["Unilateral Price"];
     if (!uniLateralPrice) {
-        record["Unilateral Price"] = "FALSE";
+        record["Unilateral Price"] = "F";
     }
 }
 
@@ -389,7 +389,6 @@ function setDummyExternalId(record) {
 }
 
 function setPriceLevels(record) {
-
     var mapPrice = record["MAP Price"];
     var uniLateralPrice = record["Unilateral Price"];
 
@@ -397,7 +396,7 @@ function setPriceLevels(record) {
     record["OnlinePriceIngested"] = mapPrice;
 
     // If the CSV value for Unilateral Price = TRUE, the following price levels are set to the CSV value for MAP Price, regardless of the value found in any of the Price Level Percentage columns:
-    if (uniLateralPrice == "TRUE") {
+    if (uniLateralPrice == "TRUE" || uniLateralPrice == "T" || uniLateralPrice == "t") {
         record["BasePriceIngested"] = mapPrice;
         record["OnlinePriceIngested"] = mapPrice;
         record["SellAIngested"] = mapPrice;
@@ -409,7 +408,7 @@ function setPriceLevels(record) {
         record["NETWORK2Ingested"] = mapPrice;
     }
 
-    if (!uniLateralPrice || uniLateralPrice == "FALSE") {
+    if (!uniLateralPrice || uniLateralPrice == "FALSE" || uniLateralPrice == "F" || uniLateralPrice == "f") {
         record["SellAIngested"] = getPriceLevelSellA(record);
         record["SellBIngested"] = getPriceLevelSellB(record);
         record["SellCIngested"] = getPriceLevelSellC(record);
@@ -417,6 +416,11 @@ function setPriceLevels(record) {
         record["SellEIngested"] = getPriceLevelSellE(record);
         record["NETWORK2Ingested"] = getPriceLevelSellNW2(record);
         record["NETWORKIngested"] = getPriceLevelSellNW(record);
+    }
+    
+    if (!mapPrice || mapPrice == "null" || mapPrice == "NULL") {
+        record["BasePriceIngested"] = record["SellAIngested"];
+        record["OnlinePriceIngested"] = record["SellAIngested"];
     }
     
     record["PriceLevelAPercentageIngested"] = getValueForPriceLevel(record, "Price Level A Percentage");

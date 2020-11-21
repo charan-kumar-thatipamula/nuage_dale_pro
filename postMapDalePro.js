@@ -35,9 +35,11 @@ function postMap (options) {
 function setValues(options) {
     for(var i=0; i<options.postMapData.length; i++){
         var record = options.postMapData[i];
-        if (!record) {
+        $$.logExecution("DEBUG", "record", JSON.stringify(record));
+        if (!record || !record.nlobjFieldIds) {
             continue;
         }
+        record = record.nlobjFieldIds;
         preferredStockLevelMapping(record);
         reorderPointMapping(record);
     }
@@ -45,26 +47,14 @@ function setValues(options) {
 
 function preferredStockLevelMapping(record) {
     var pStockLevel = record["custitem_preferred_stock_level"];
-    if (record.internalId || record.id) {
-        if (!pStockLevel || pStockLevel.length == 0) {
-            delete record["custitem_preferred_stock_level"];
-        }
-    }
-
-    if (!record.internalId && !record.id) {
+    if (record.hasOwnProperty("custitem_preferred_stock_level")) {
         record["custitem_preferred_stock_level"] = (!pStockLevel || pStockLevel.length == 0) ? 0 : pStockLevel;
     }
 }
 
 function reorderPointMapping(record) {
     var reorderPoint = record["custitem_reorder_point"];
-    if (record.internalId || record.id) {
-        if (!reorderPoint || reorderPoint.length == 0) {
-            delete record["custitem_reorder_point"];
-        }
-    }
-
-    if (!record.internalId && !record.id) {
+    if (record.hasOwnProperty("custitem_reorder_point")) {
         record["custitem_reorder_point"] = (!reorderPoint || reorderPoint.length == 0) ? 0 : reorderPoint;
     }
 }
