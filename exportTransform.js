@@ -88,7 +88,7 @@ function setLandCSTPercentage(record) {
     var sheetCSTLimit = 2999.99;
     // what if sheetCST == 2999.99??
     if (!landCSTPercentage) {
-        if (sheetCST < sheetCSTLimit) {
+        if (sheetCST <= sheetCSTLimit) {
             record["LandCST Percentage"] = 2;
         }
 
@@ -101,12 +101,44 @@ function setLandCSTPercentage(record) {
 /**
     LBV MARKUP PERCENTAGE (custitemcust_item_lbv_markup)
 
-    If the value in the CSV for LBV Markup Percentage is EMPTY, the field LBV MARKUP PERCENTAGE (custitemcust_item_lbv_markup) is set to "0"
- */
+    If the value in the CSV for LBV Markup Percentage is EMPTY, 
+        the field LBV MARKUP PERCENTAGE (custitemcust_item_lbv_markup) is set to "0"
+
+    If SHEETCST in the CSV is less than or equal to $9.99 and the value in the CSV for LBV Markup Percentage = blank, 
+        set the value for LBV Markup Percentage to 30 and calculate accordingly.
+
+    If SHEETCST in the CSV is between $10 - $19.99 and the value in the CSV for LBV Markup Percentage = blank, 
+        set the value for LBV Markup Percentage to 20 and calculate accordingly.
+
+    If SHEETCST in the CSV is between $20 - $39.99 and the value in the CSV for LBV Markup Percentage = blank, 
+        set the value for LBV Markup Percentage to 15 and calculate accordingly.
+
+    If SHEETCST in the CSV is between $40 - $74.99 and the value in the CSV for LBV Markup Percentage = blank, 
+        set the value for LBV Markup Percentage to 10 and calculate accordingly.
+
+    If the SHEETCST in the CSV is between $75 and $99 and the value in the CSV for LBV Markup Percentage = blank, 
+        set the value for LBV Markup Percentage to 5 and calculate accordingly. 
+
+*/
+
 function setLBVMarkupPercentage(record) {
     var lbvMarkupPercentage = record["LBV Markup Percentage"];
     if (!lbvMarkupPercentage) {
         record["LBV Markup Percentage"] = 0;
+        if (record.SHEETCST) {
+            var sheetCST = getFloatValue(record.SHEETCST);
+            if (sheetCST <= 9.99) {
+                record["LBV Markup Percentage"] = 30;
+            } else if (sheetCST >= 10 && sheetCST <= 19.99) {
+                record["LBV Markup Percentage"] = 20;
+            } else if (sheetCST >= 20 && sheetCST <= 39.99) {
+                record["LBV Markup Percentage"] = 15;
+            } else if (sheetCST >= 40 && sheetCST <= 74.99) {
+                record["LBV Markup Percentage"] = 10;
+            } else if (sheetCST >= 75 && sheetCST <= 99) {
+                record["LBV Markup Percentage"] = 5;
+            }
+        }
     }
 }
 
@@ -230,7 +262,7 @@ function setLandCSTAndLandCSTBaseValueFields(record) {
             record["LandCSTBaseValueIngested"] = purchasePrice * 1.02;
         }
 
-        if (sheetCST > sheetCSTLimit) {
+        if (sheetCST >= sheetCSTLimit) {
             record["LandCSTIngested"] = purchasePrice * 1.01;
             record["LandCSTBaseValueIngested"] = purchasePrice * 1.01;
         }
@@ -422,7 +454,7 @@ function setPriceLevels(record) {
         record["BasePriceIngested"] = record["SellAIngested"];
         record["OnlinePriceIngested"] = record["SellAIngested"];
     }
-    
+
     record["PriceLevelAPercentageIngested"] = getValueForPriceLevel(record, "Price Level A Percentage");
     record["PriceLevelBPercentageIngested"] = getValueForPriceLevel(record, "Price Level B Percentage");
     record["PriceLevelCPercentageIngested"] = getValueForPriceLevel(record, "Price Level C Percentage");
@@ -515,7 +547,7 @@ function appyRoundingRuleForPriceLevelSell(priceValue) {
     }
 
     // For prices calculated between $10.01 and $49.99, round to the nearest dollar or .50
-    if (priceValue >= 10.01 || priceValue <= 49.99) {
+    if (priceValue >= 10.01 && priceValue <= 49.99) {
         return roundToNearestDot5(priceValue);
     }
     // For prices calculated above $49.99, round to the nearest dollar.
