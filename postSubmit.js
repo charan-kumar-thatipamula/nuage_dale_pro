@@ -48,14 +48,29 @@ function postSubmit (options) {
 
         var preferredStockLevel = record.getFieldValue('custitem_preferred_stock_level_store');
         var reorderPoint = record.getFieldValue('custitem_reorder_point_store');
+        var landCST = record.getFieldValue('custitemcust_landed_cost');
+        if (typeof landCST == "string") {
+            landCST = parseFloat(landCST);
+        }
 
+        var landCSTBaseUnitConversionRate = 1;
         if (record.getFieldValue('custitem_is_item_create') == "T") {
             preferredStockLevel = getDefaultValue(preferredStockLevel);
             reorderPoint = getDefaultValue(reorderPoint);
             record.setLineItemValue('locations', 'preferredstocklevel', 3, preferredStockLevel);
             record.setLineItemValue('locations', 'reorderpoint', 3, reorderPoint);
+        } else {
+            landCSTBaseUnitConversionRate = record.getFieldValue('custitemcust_item_landcst_convrate');
         }
 
+        if (typeof landCSTBaseUnitConversionRate == "string") {
+            landCSTBaseUnitConversionRate = parseFloat(landCSTBaseUnitConversionRate);
+        }
+
+        var landCSTBaseValue = landCST / landCSTBaseUnitConversionRate;
+        landCSTBaseValue = roundTo2Decimal(landCSTBaseValue);
+        record.setFieldValue('custitemcust_item_landcstbaseunitvalue', landCSTBaseValue);
+        
         if (preferredStockLevel || (typeof preferredStockLevel == "string" && preferredStockLevel.trim().length > 0)) {
             record.setLineItemValue('locations', 'preferredstocklevel', 3, preferredStockLevel);
         }
@@ -80,4 +95,11 @@ function getDefaultValue(value) {
     }
 
     return value;
+}
+
+function roundTo2Decimal(value) {
+    if (!value) {
+        return value;
+    }
+    return value.toFixed(2);
 }

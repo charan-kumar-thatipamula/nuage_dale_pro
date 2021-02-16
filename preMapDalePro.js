@@ -133,7 +133,7 @@ function setVendorNameOrExternalId(record, r) {
     var prefix = r[0].getValue('custrecordcust_record_prefix');
     var itemName = record["Item Part Name"];
     if (vendorCodeCharRemove == "T") {
-        itemName = itemName.replace(/[^A-Za-z0-9]/gmi, "").replace(/\s+/g, "");
+        itemName = itemName.replace(/[^A-Za-z0-9+]/gmi, "").replace(/\s+/g, "");
     }
     var externalId = prefix + "-" + itemName; 
     record["VendorName"] = itemName.toUpperCase();
